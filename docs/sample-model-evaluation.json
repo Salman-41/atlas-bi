@@ -1,0 +1,49 @@
+{
+  "dataset": "REES46 cosmetics version 6",
+  "sample_sha256": "475c0ed833182a67bbcda0a39cc69ce6806b00d7d2afe3aba3f6f6ea784fa600",
+  "sample_event_rows": 190082,
+  "warehouse_rows_after_exact_deduplication": 181296,
+  "scope": "Authentic approximately 1% user-history sample; sample-only measured evaluation, not full-dataset capacity or future guarantee",
+  "forecast": {
+    "holdout_days": 30,
+    "train_end": "2020-01-29",
+    "test_start": "2020-01-30",
+    "seasonal_naive": {
+      "mae_price_units": 232.8807,
+      "rmse_price_units": 298.6727
+    },
+    "hist_gradient_boosting": {
+      "mae_price_units": 346.5246,
+      "rmse_price_units": 411.5757
+    },
+    "selected": "seasonal_naive"
+  },
+  "churn": {
+    "label": "No observed purchase in the next 30 days",
+    "training_customers": 418,
+    "held_out_customers": 94,
+    "held_out_prevalence": 0.9043,
+    "prior_baseline_roc_auc": 0.5,
+    "logistic_regression_roc_auc": 0.4941,
+    "limitations": "High class prevalence and weak discrimination; do not use as an automated retention trigger."
+  },
+  "segmentation": {
+    "customers": 457,
+    "selected_k": 3,
+    "silhouette_sample": 0.3317
+  },
+  "anomaly": {
+    "purchase_sessions": 1477,
+    "flagged_sessions": 30,
+    "flagged_fraction": 0.0203,
+    "limitations": "No fraud labels; flags are statistical review candidates, not fraud predictions."
+  },
+  "trained_at_utc": "2026-09-30T03:19:44.452049+00:00",
+  "software": {
+    "python": "3.12.14",
+    "duckdb": "1.3.2",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1"
+  }
+}

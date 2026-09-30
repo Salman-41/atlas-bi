@@ -1,0 +1,46 @@
+{
+  "recorded_at_utc": "2026-09-30T03:21:39Z",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "cpu_count": 9,
+  "scope": "local measured run; not a full-dataset capacity claim",
+  "ingestion": {
+    "checksum": "475c0ed833182a67bbcda0a39cc69ce6806b00d7d2afe3aba3f6f6ea784fa600",
+    "source_name": "sample.csv",
+    "status": "completed",
+    "rows_read": 190082,
+    "rows_valid": 190082,
+    "rows_rejected": 0,
+    "rows_inserted": 181296,
+    "duplicate_rows": 8786,
+    "quality": {
+      "invalid_event_time": 0,
+      "invalid_event_type": 0,
+      "invalid_product_id": 0,
+      "invalid_category_id": 0,
+      "invalid_user_id": 0,
+      "invalid_price": 0
+    },
+    "parquet_path": "data/benchmark-sample/parquet/<source-sha256>",
+    "lineage": {
+      "transform_version": "rees46-v1",
+      "grain": "deduplicated observed event",
+      "synthetic": false
+    },
+    "elapsed_seconds": 10.25
+  },
+  "ingestion_seconds": 10.709614486000191,
+  "warehouse_events": 181296,
+  "daily_purchase_query_ms": {
+    "runs": 10,
+    "median": 1.5169695000167849,
+    "max": 2.3844749998715997,
+    "first": 2.3844749998715997
+  },
+  "process_peak_rss_mib": 465.5703125,
+  "duckdb": "1.3.2",
+  "pandas": "3.0.6",
+  "numpy": "2.5.3",
+  "scikit_learn": "1.9.1",
+  "machine": "9 vCPU Linux cloud runner; benchmark RSS is this runner, not the 8 GB target laptop"
+}
