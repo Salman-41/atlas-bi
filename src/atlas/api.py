@@ -18,7 +18,11 @@ from atlas.auth import current_user, roles, token, verify_password
 from atlas.models import User, session
 
 app = FastAPI(title='ATLAS BI', version='0.1.0', description='Observed commerce events, explicitly bounded analytics and scenario planning')
-app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS','http://localhost:3000').split(','), allow_credentials=False, allow_methods=['GET','POST'], allow_headers=['Authorization','Content-Type'])
+cors_origins = [origin.strip() for origin in os.getenv(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000',
+).split(',') if origin.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_credentials=False, allow_methods=['GET','POST'], allow_headers=['Authorization','Content-Type'])
 logger = logging.getLogger('atlas.api')
 
 @app.middleware('http')

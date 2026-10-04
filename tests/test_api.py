@@ -22,6 +22,31 @@ def auth(client,role='viewer'):
     assert response.status_code==200
     return {'Authorization':'Bearer '+response.json()['access_token']}
 
+@pytest.mark.parametrize('origin', [
+    'http://localhost:3000', 'http://127.0.0.1:3000', 'http://0.0.0.0:3000',
+])
+def test_login_preflight(client, origin):
+    response = client.options('/api/auth/login', headers={
+        'Origin': origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type',
+    })
+    assert response.status_code == 200
+    assert response.headers['access-control-allow-origin'] == origin
+    response = client.post('/api/auth/login', headers={'Origin': origin},
+                           json={'username': 'admin', 'password': 'test-password'})
+    assert response.status_code == 200
+    assert response.headers['access-control-allow-origin'] == origin
+
+def test_login_preflight_rejects_unlisted_origin(client):
+    response = client.options('/api/auth/login', headers={
+        'Origin': 'https://untrusted.example',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type',
+    })
+    assert response.status_code == 400
+    assert 'access-control-allow-origin' not in response.headers
+
 def test_auth_and_no_warehouse(client):
     assert client.get('/health').status_code==200
     assert client.get('/api/overview').status_code==401

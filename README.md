@@ -53,10 +53,9 @@ The standalone website demo uses clearly labeled synthetic data. It is not a rea
 
 ## Run the application
 
-Copy .env.example to .env, generate a unique signing secret of at least 32 characters, set the local paths and never commit .env.
+Copy .env.example to .env, generate a unique signing secret of at least 32 characters, set the local paths and never commit .env. Python commands automatically load the project .env; exported environment variables take precedence. CORS permits localhost, 127.0.0.1 and 0.0.0.0 on port 3000 by default. Set CORS_ORIGINS to a comma-separated list of exact frontend origins for other hosts or ports.
 
     cp .env.example .env
-    set -a; source .env; set +a
     mkdir -p data
     alembic upgrade head
     python -m atlas.auth salman --role admin
