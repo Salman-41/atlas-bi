@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as echarts from "echarts";
 export default function Chart({
   labels,
@@ -15,38 +15,77 @@ export default function Chart({
   dark?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState("Daily");
+  const [average, setAverage] = useState(true);
+  const series = useMemo(() => {
+    if (type === "bar" || view === "Daily") return { labels, values };
+    if (view === "Cumulative") {
+      let total = 0;
+      return { labels, values: values.map((v) => (total += v)) };
+    }
+    const groups = new Map<string, number>();
+    labels.forEach((d, i) => {
+      const date = new Date(d + "T00:00:00Z");
+      date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+      const key = date.toISOString().slice(0, 10);
+      groups.set(key, (groups.get(key) || 0) + values[i]);
+    });
+    return { labels: [...groups.keys()], values: [...groups.values()] };
+  }, [labels, values, type, view]);
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
-    const muted = dark ? "#939ebd" : "#a0a7bc";
+    const muted = dark ? "#8799b0" : "#8390a5";
+    const showAverage = type === "line" && view === "Daily" && average;
+    const rolling = series.values.map((_, i) =>
+      i < 6
+        ? null
+        : series.values.slice(i - 6, i + 1).reduce((a, b) => a + b, 0) / 7,
+    );
     chart.setOption({
-      color: ["#8c78ea"],
-      animationDuration: 450,
+      color: ["#5ce6bf", "#b2a4ff"],
+      animationDuration: 350,
       tooltip: {
         trigger: "axis",
-        backgroundColor: dark ? "#252b42" : "#fff",
-        borderColor: dark ? "#3b425b" : "#e9e6f3",
+        backgroundColor: dark ? "#1b2536" : "#fff",
+        borderColor: dark ? "#344158" : "#e1e6ed",
         padding: [12, 16],
-        textStyle: { color: dark ? "#e9e7ff" : "#4b4567", fontSize: 11 },
+        textStyle: { color: dark ? "#e1edf7" : "#293449", fontSize: 11 },
         valueFormatter: (v: number) =>
-          v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+          typeof v === "number"
+            ? v.toLocaleString(undefined, { maximumFractionDigits: 2 })
+            : "—",
         axisPointer: {
           type: "line",
-          lineStyle: { color: "#a89bd7", type: "dashed" },
+          lineStyle: { color: "#73968b", type: "dashed" },
         },
       },
-      grid: { left: 62, right: 28, top: 24, bottom: 43 },
+      toolbox: {
+        right: 20,
+        top: 0,
+        iconStyle: { borderColor: muted },
+        feature: {
+          saveAsImage: {
+            title: "Save chart as PNG",
+            name: "atlas-" + label.toLowerCase().replaceAll(" ", "-"),
+            backgroundColor: dark ? "#101a28" : "#fff",
+            pixelRatio: 2,
+          },
+          dataZoom: { title: { zoom: "Select a range", back: "Reset range" } },
+        },
+      },
+      grid: { left: 64, right: 28, top: 34, bottom: type === "line" ? 68 : 40 },
       xAxis: {
         type: "category",
         boundaryGap: type === "bar",
-        data: labels,
+        data: series.labels,
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
           color: muted,
           hideOverlap: true,
           fontSize: 10,
-          margin: 18,
+          margin: 14,
           formatter: (v: string) =>
             /^\d{4}-\d{2}-\d{2}$/.test(v)
               ? new Date(v + "T00:00:00Z").toLocaleDateString("en-US", {
@@ -70,31 +109,62 @@ export default function Chart({
                 : String(v),
         },
         splitLine: {
-          lineStyle: { color: dark ? "#30364b" : "#eef0f6", type: "dashed" },
+          lineStyle: { color: dark ? "#253348" : "#eaf0f5", type: "dashed" },
         },
       },
+      dataZoom:
+        type === "line"
+          ? [
+              { type: "inside" },
+              {
+                type: "slider",
+                height: 14,
+                bottom: 12,
+                borderColor: "transparent",
+                backgroundColor: dark ? "#1a2839" : "#edf4f1",
+                fillerColor: "#5ce6bf16",
+                handleStyle: { color: "#55cba7", borderColor: "#55cba7" },
+                dataBackground: {
+                  lineStyle: { color: "#5ce6bf" },
+                  areaStyle: { color: "#5ce6bf22" },
+                },
+                textStyle: { color: muted, fontSize: 9 },
+              },
+            ]
+          : [],
       series: [
         {
           name: label,
           type,
-          data: values,
-          smooth: 0.28,
+          data: series.values,
+          smooth: false,
           symbol: "circle",
-          symbolSize: 7,
+          symbolSize: 6,
           showSymbol: false,
-          lineStyle: { width: 3, color: "#8c78ea" },
+          lineStyle: { width: 2.5, color: "#5ce6bf" },
           areaStyle:
             type === "line"
               ? {
                   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: dark ? "#8c78ea35" : "#8c78ea28" },
-                    { offset: 1, color: "#8c78ea00" },
+                    { offset: 0, color: "#5ce6bf30" },
+                    { offset: 1, color: "#5ce6bf00" },
                   ]),
                 }
               : undefined,
           barMaxWidth: 34,
-          itemStyle: { borderRadius: [6, 6, 0, 0] },
+          itemStyle: { borderRadius: [4, 4, 0, 0] },
         },
+        ...(showAverage
+          ? [
+              {
+                name: "7-day moving average",
+                type: "line",
+                data: rolling,
+                showSymbol: false,
+                lineStyle: { width: 2, type: "dashed", color: "#b2a4ff" },
+              },
+            ]
+          : []),
       ],
     });
     const observer = new ResizeObserver(() => chart.resize());
@@ -103,13 +173,41 @@ export default function Chart({
       observer.disconnect();
       chart.dispose();
     };
-  }, [labels, values, type, label, dark]);
+  }, [series, type, label, dark, view, average]);
   return (
-    <div
-      ref={ref}
-      className="chart"
-      role="img"
-      aria-label={`${label} chart with ${labels.length} observations`}
-    />
+    <div className="chart-module">
+      {type === "line" && (
+        <div className="chart-view-controls">
+          <div className="chart-switch">
+            {["Daily", "Weekly", "Cumulative"].map((v) => (
+              <button
+                key={v}
+                className={view === v ? "selected" : ""}
+                onClick={() => setView(v)}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          {view === "Daily" && (
+            <label>
+              <input
+                type="checkbox"
+                checked={average}
+                onChange={(e) => setAverage(e.target.checked)}
+              />
+              <span />
+              7-day average
+            </label>
+          )}
+        </div>
+      )}
+      <div
+        ref={ref}
+        className="chart"
+        role="img"
+        aria-label={`${label} chart: ${view.toLowerCase()}, ${series.labels.length} observations`}
+      />
+    </div>
   );
 }

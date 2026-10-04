@@ -97,6 +97,9 @@ def forecast(daily: pd.DataFrame, output: Path, horizon: int = 30) -> dict:
               else seasonal_forecast(series, horizon))
     joblib.dump({'model': model, 'selected': winner, 'history': series.iloc[-28:].tolist()}, output / 'forecast.joblib')
     return {'status': 'trained', 'metrics': metrics, 'selected_model': winner,
+            'backtest': [{'date': str(d.date()), 'actual': round(float(a), 2),
+                          'prediction': round(float(p), 2), 'baseline': round(float(b), 2)}
+                         for d, a, p, b in zip(holdout.index, holdout, predicted, baseline)],
             'train_end': str(training.index[-1].date()), 'test_start': str(holdout.index[0].date()),
             'test_days': len(holdout), 'horizon': horizon, 'selected_max_leaf_nodes': selected_leaves,
             'predictions': [{'date': str(d.date()), 'prediction': round(v, 2)} for d, v in zip(dates, future)],

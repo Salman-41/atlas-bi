@@ -1,6 +1,9 @@
 "use client";
 import { useMemo, useState, FormEvent } from "react";
 import dynamic from "next/dynamic";
+import AtlasLogo from "@/components/atlas-logo";
+import { DatasetStrip, type Insights } from "@/components/analytics-panel";
+import type { ModelResponse } from "@/components/model-board";
 import {
   QueryClient,
   QueryClientProvider,
@@ -45,6 +48,15 @@ const Chart = dynamic(() => import("@/components/chart"), {
   ssr: false,
   loading: () => <div className="skeleton chart" />,
 });
+const AnalyticsPanel = dynamic(() => import("@/components/analytics-panel"), {
+  ssr: false,
+});
+const CustomerCharts = dynamic(() => import("@/components/customer-charts"), {
+  ssr: false,
+});
+const ModelBoard = dynamic(() => import("@/components/model-board"), {
+  ssr: false,
+});
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 type Overview = {
   kpis: {
@@ -79,6 +91,7 @@ const navigation = [
   ["Predictions", Activity],
   ["Inventory", Database],
   ["Reports", FileChartColumn],
+  ["Data Explorer", Database],
 ] as const;
 const money = (n: number | null | undefined) =>
   typeof n === "number" && Number.isFinite(n)
@@ -203,14 +216,14 @@ function Workspace() {
   const [token, setToken] = useState("");
   const [demo, setDemo] = useState(false);
   const [page, setPage] = useState("Overview");
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   const [menu, setMenu] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [start, setStart] = useState("2019-10-01");
-  const [end, setEnd] = useState("2019-10-31");
+  const [end, setEnd] = useState("2020-02-29");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [ask, setAsk] = useState(false);
@@ -264,6 +277,16 @@ function Workspace() {
     retry: false,
   });
   const data = overview.data;
+  const insights = useQuery({
+    queryKey: ["insights", token, start, end],
+    queryFn: async () =>
+      (await request("/api/insights?" + dates)).json() as Promise<Insights>,
+    enabled:
+      !!token &&
+      !demo &&
+      validDates &&
+      ["Overview", "Sales", "Data Explorer"].includes(page),
+  });
   const warehouseMissing =
     overview.error instanceof ApiError &&
     overview.error.code === "warehouse_missing";
@@ -320,7 +343,8 @@ function Workspace() {
   });
   const predictions = useQuery({
     queryKey: ["predictions", token],
-    queryFn: async () => (await request("/api/predictions")).json(),
+    queryFn: async () =>
+      (await request("/api/predictions")).json() as Promise<ModelResponse>,
     enabled: !!token && !demo && page === "Predictions",
   });
   const demoRows: Product[] = Array.from({ length: 8 }, (_, i) => ({
@@ -407,13 +431,14 @@ function Workspace() {
       <main className="login">
         <div className="login-story">
           <div className="brand">
-            <span className="brand-icon">A</span>ATLAS<span>BI</span>
+            <AtlasLogo />
+            ATLAS<span>BI</span>
           </div>
-          <span className="eyebrow">THE INTELLIGENCE LAYER</span>
+          <span className="eyebrow">COMMERCE. DECODED.</span>
           <h1>
-            A clearer view.
+            Every event. A signal.
             <br />
-            <em>A smarter next move.</em>
+            <em>Find your next insight.</em>
           </h1>
           <p>
             Explore the signals behind your business. From transaction-level
@@ -491,12 +516,13 @@ function Workspace() {
             setPage("Overview");
           }}
         >
-          <span className="brand-icon">A</span>ATLAS<span>BI</span>
+          <AtlasLogo />
+          ATLAS<span>BI</span>
         </a>
         <div className="workspace-label">
           <span className="workspace-avatar">R</span>
           <div>
-            Retail workspace
+            Commerce lab
             <small>
               {demo ? "Demonstration environment" : "Connected environment"}
             </small>
@@ -590,7 +616,7 @@ function Workspace() {
           <div className="page-title">
             <div>
               <span className="eyebrow">
-                RETAIL INTELLIGENCE / {page.toUpperCase()}
+                ATLAS / COMMERCE INTELLIGENCE / {page.toUpperCase()}
               </span>
               <h1>
                 {page === "Overview"
@@ -599,7 +625,7 @@ function Workspace() {
               </h1>
               <p>
                 {page === "Overview"
-                  ? "Understand what happened. Know where to look next."
+                  ? "Follow the customer journey. Explore the patterns. Show your evidence."
                   : "Explore evidence, compare signals, and make informed decisions."}
               </p>
             </div>
@@ -649,6 +675,7 @@ function Workspace() {
               </div>
             </div>
           </div>
+          <DatasetStrip data={insights.data} demo={demo} />
           <div className="data-banner">
             <ShieldCheck size={16} />
             {demo
@@ -954,6 +981,13 @@ function Workspace() {
                       <small>Not verified distinct orders</small>
                     </Card>
                   </div>
+                  {customers.data && (
+                    <CustomerCharts
+                      cohorts={customers.data.cohorts}
+                      profiles={customers.data.rfm}
+                      dark={dark}
+                    />
+                  )}
                   <Card>
                     <div className="card-heading">
                       <div>
@@ -1145,65 +1179,12 @@ function Workspace() {
               )}
               {page === "Predictions" && (
                 <>
-                  <div className="model-grid">
-                    {[
-                      [
-                        "Sales forecasting",
-                        "Time-ordered backtesting",
-                        "MAE · RMSE",
-                      ],
-                      [
-                        "Churn prediction",
-                        "Forward inactivity labels",
-                        "ROC-AUC · Precision · Recall",
-                      ],
-                      [
-                        "Customer segmentation",
-                        "Scaled RFM features",
-                        "Silhouette score",
-                      ],
-                      [
-                        "Anomaly detection",
-                        "Isolation Forest",
-                        "Review priority · Score distribution",
-                      ],
-                    ].map(([title, description, metrics]) => (
-                      <Card className="model-card" key={title}>
-                        <Activity size={22} />
-                        <span className="chip">Awaiting artifact</span>
-                        <h2>{title}</h2>
-                        <p>{description}</p>
-                        <small>{metrics}</small>
-                        <div className="model-empty">
-                          No verified model result loaded. Run training to
-                          generate versioned metrics and predictions.
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                  {!demo && (
-                    <Card className="form-card">
-                      <h2>Registered model evidence</h2>
-                      {predictions.error ? (
-                        <p role="alert">
-                          {(predictions.error as Error).message}
-                        </p>
-                      ) : (
-                        <pre className="answer">
-                          {JSON.stringify(
-                            predictions.data || { status: "loading" },
-                            null,
-                            2,
-                          )}
-                        </pre>
-                      )}
-                    </Card>
+                  <ModelBoard data={predictions.data} dark={dark} demo={demo} />
+                  {predictions.error && (
+                    <p className="error" role="alert">
+                      {(predictions.error as Error).message}
+                    </p>
                   )}
-                  <p className="muted">
-                    Models are decision support. Registered evidence is shown as
-                    supplied by the API; the cards describe pipeline
-                    methodology.
-                  </p>
                 </>
               )}
               {page === "Inventory" && (
@@ -1350,6 +1331,41 @@ function Workspace() {
                     />
                   </Card>
                 </div>
+              )}
+              {["Overview", "Sales", "Data Explorer"].includes(page) && (
+                <>
+                  {insights.isLoading ? (
+                    <div className="analysis-grid">
+                      <div className="card skeleton chart" />
+                      <div className="card skeleton chart" />
+                    </div>
+                  ) : insights.data ? (
+                    <AnalyticsPanel
+                      data={insights.data}
+                      dark={dark}
+                      section={page}
+                    />
+                  ) : insights.error ? (
+                    <p className="error" role="alert">
+                      {(insights.error as Error).message}
+                    </p>
+                  ) : (
+                    demo && (
+                      <Card className="demo-analytics-note">
+                        <Database size={20} />
+                        <div>
+                          <h3>Go deeper with the real dataset</h3>
+                          <p>
+                            Sign in to explore customer reach, activity
+                            patterns, coverage, and period comparisons. This
+                            demonstration keeps unmeasured analytics out of the
+                            results.
+                          </p>
+                        </div>
+                      </Card>
+                    )
+                  )}
+                </>
               )}
               <details className="provenance">
                 <summary>View data provenance</summary>

@@ -117,3 +117,27 @@ def test_market_basket_uses_session_proxy_and_reports_pair_metrics(client,tmp_pa
     assert pair['confidence_a_to_b']==1
     assert pair['lift']==1.5
     assert 'not an order ID' in response.json()['limitations'][0]
+
+def test_insights_comparison_behavior_and_coverage(client,tmp_path):
+    import duckdb
+    con=duckdb.connect(str(tmp_path/'warehouse.duckdb'))
+    con.execute('CREATE TABLE fact_events(event_time TIMESTAMP,event_type VARCHAR,product_id VARCHAR,category_code VARCHAR,brand VARCHAR,price DOUBLE,user_id VARCHAR,user_session VARCHAR)')
+    con.execute("""INSERT INTO fact_events VALUES
+      ('2019-10-01 10:00:00','purchase','1',NULL,NULL,5,'u1','s1'),
+      ('2019-10-02 11:00:00','view','1','c','b',10,'u1','s2'),
+      ('2019-10-02 11:01:00','purchase','1','c','b',10,'u1','s2'),
+      ('2019-10-02 12:00:00','purchase','2','c','b',20,'u2','s3')""")
+    con.close()
+    assert client.get('/api/insights').status_code==401
+    response=client.get('/api/insights?start=2019-10-02&end=2019-10-02',headers=auth(client))
+    assert response.status_code==200
+    data=response.json()
+    assert data['comparison']['available'] is True
+    assert data['current']['purchase_value']==30
+    assert data['previous']['purchase_value']==5
+    assert data['acquisition']=={'new_customers':1,'returning_customers':1}
+    assert data['coverage']['categorized_events']==3
+    assert sum(r['events'] for r in data['heatmap'])==3
+    assert data['dataset']['events']==4
+    response=client.get('/api/insights?start=2019-10-01&end=2019-10-01',headers=auth(client))
+    assert response.json()['comparison']['available'] is False

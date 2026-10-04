@@ -108,6 +108,10 @@ def overview(window=Depends(dates),user=Depends(current_user)):
 def customers(window=Depends(dates),user=Depends(current_user)):
     return analytics.customers(window.start,window.end)
 
+@app.get('/api/insights')
+def insights(window=Depends(dates),user=Depends(current_user)):
+    return analytics.insights(window.start,window.end)
+
 @app.get('/api/products')
 def products(window=Depends(dates),page:int=Query(1,ge=1,le=1000000),page_size:int=Query(25,ge=1,le=100),user=Depends(current_user)):
     return analytics.products(window.start,window.end,page,page_size)

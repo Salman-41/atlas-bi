@@ -10,8 +10,10 @@ test("demonstration dates, reports, theme and scenario remain honest", async ({
   await expect(
     page.getByRole("heading", { name: "Business at a glance" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Toggle theme" }).click();
   await expect(page.locator(".workspace")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Toggle theme" }).click();
+  await expect(page.locator(".workspace")).not.toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Toggle theme" }).click();
   await page.getByLabel("Start date").fill("2019-10-20");
   await page.getByLabel("End date").fill("2019-10-10");
   await expect(page.locator('.error[role="alert"]')).toContainText(
@@ -87,4 +89,14 @@ test("missing warehouse offers setup and an explicit demonstration", async ({
       name: "Your workspace is ready. Add your data.",
     }),
   ).not.toBeVisible();
+});
+
+test('trend supports weekly and cumulative analysis',async({page})=>{
+ await page.goto('/');await page.getByRole('button',{name:'Explore demonstration'}).click();
+ await page.getByRole('button',{name:'Weekly',exact:true}).click();
+ await expect(page.getByRole('img',{name:/Purchase value chart: weekly/})).toBeVisible();
+ await page.getByRole('button',{name:'Cumulative',exact:true}).click();
+ await expect(page.getByRole('img',{name:/Purchase value chart: cumulative/})).toBeVisible();
+ await page.getByRole('button',{name:'Data Explorer',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Go deeper with the real dataset'})).toBeVisible();
 });

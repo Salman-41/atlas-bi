@@ -1,11 +1,13 @@
 # Frontend
 
-Run `cd web && npm ci && npm run dev`. Set `NEXT_PUBLIC_API_URL` before the production build to the FastAPI origin. The default is `http://localhost:8000`.
+Run `cd web && npm ci && npm run dev`. Set `NEXT_PUBLIC_API_URL` before a production build; it defaults to `http://localhost:8000`.
 
-The Next.js App Router application has seven in-workspace sections, dark/light themes, a tablet/mobile navigation drawer, global date inputs, dynamically loaded ECharts, TanStack Query loading and error states, a TanStack product table, reports, and an allowlisted question panel. Local shadcn-style button/card primitives are owned in `src/components/ui`; the button supports Radix Slot composition. Authentication holds the bearer token in memory only and clears the password after success. Refreshing requires sign-in again.
+The Next.js application has eight sections: Overview, Sales, Customers, Products, Predictions, Inventory, Reports and Data Explorer. The interface opens in a dark analytical studio theme, with a light option, responsive navigation and the custom Atlas brand mark in `web/public/atlas-mark.png`.
 
-The explicit **Explore demonstration** mode runs without an API and is permanently labeled synthetic. It is a deterministic interface fixture, not an authentic dataset sample, a model benchmark, or a claim of business performance. Values use source price units because the event source does not specify currency. There is no claimed profit, verified order count, stock ledger, or geographic information.
+ECharts provides daily, weekly and cumulative purchase trends, a seven-day average, range zoom and PNG export. Additional charts show behavior reach, new/returning purchasers, weekday/hour activity, data coverage, stacked daily events, purchase cohorts, RFM profiles, model holdout performance and historical forecast horizons. Model cards render measured metrics and explicit unavailable states.
 
-Connected overview, product pagination, basket-affinity pairs, reports, and questions call the API. The customer section renders connected RFM rows and cohort evidence. The prediction section renders registered model evidence returned by the API; methodology cards never invent metrics. Inventory is a local, explicitly assumed lead-time-demand calculator, not a real inventory optimizer. Product table sorting is on the loaded page only. Category selection navigates to product exploration but does not apply category filtering. These are documented product limitations.
+TanStack Query isolates connected requests by token and date range. Bearer tokens remain in memory, and passwords are cleared after successful login. Demo mode is explicitly synthetic and does not invent customer cohorts or model evidence. Product filtering/sorting operates on the loaded page. Category selection opens product exploration and filters the loaded page by category text.
 
-Validation: production `npm run build` and `npm run typecheck` passed. `npm run test:e2e` was attempted but the environment has no Chromium executable; installing Chromium returned truncated CDN archives, so browser assertions remain unverified here. Playwright tests cover demonstration provenance, invalid dates, theme, CSV export, PDF availability messaging, inventory assumptions, question behavior, and failed login.
+A missing warehouse produces a guided setup panel. API detail messages are preserved, and network failures receive connection guidance. Source price units, session proxies and historical scope remain visible. Inventory remains an explicitly assumed scenario because the source has no stock ledger.
+
+See [portfolio.md](portfolio.md) for a reviewer walkthrough and the data/model methodology behind the visualizations.

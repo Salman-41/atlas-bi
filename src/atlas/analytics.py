@@ -1,5 +1,6 @@
 """Bounded, parameterized analytics. Never accepts SQL from clients."""
 import os
+import json
 from pathlib import Path
 from contextlib import contextmanager
 import duckdb
@@ -95,3 +96,48 @@ def report(start,end,metric,dimension):
     with warehouse() as con:
         data = rows(con, f'SELECT {DIMENSIONS[dimension]} dimension,{METRICS[metric]} AS "value" FROM fact_events WHERE {WHERE} GROUP BY 1 ORDER BY 2 DESC LIMIT 1000', [start,end])
         return {'metric': metric, 'dimension': dimension, 'rows': data, 'row_limit': 1000, 'provenance': provenance(con,start,end)}
+
+
+def insights(start, end):
+    """Observed behavior, equally sized comparisons and warehouse coverage."""
+    from datetime import timedelta
+    days = (end - start).days + 1
+    previous_end = start - timedelta(days=1)
+    previous_start = start - timedelta(days=days)
+    with warehouse() as con:
+        aggregate = f"""SELECT count(*) events, count(DISTINCT user_id) active_customers,
+            count(DISTINCT user_id) FILTER(WHERE event_type='purchase') purchasing_customers,
+            coalesce(sum(price) FILTER(WHERE event_type='purchase'),0) purchase_value,
+            count(DISTINCT (user_id,user_session)) FILTER(WHERE event_type='purchase' AND user_session IS NOT NULL) purchase_sessions
+            FROM fact_events WHERE {WHERE}"""
+        current = rows(con, aggregate, [start, end])[0]
+        previous = rows(con, aggregate, [previous_start, previous_end])[0]
+        bounds = rows(con, 'SELECT min(CAST(event_time AS DATE)) first_date, max(CAST(event_time AS DATE)) last_date, count(*) events, count(DISTINCT product_id) products, count(DISTINCT user_id) customers FROM fact_events')[0]
+        coverage = rows(con, f"""SELECT count(DISTINCT CAST(event_time AS DATE)) observed_days,
+            count(*) FILTER(WHERE brand IS NOT NULL) branded_events,
+            count(*) FILTER(WHERE category_code IS NOT NULL) categorized_events,
+            count(*) FILTER(WHERE user_session IS NOT NULL) session_events
+            FROM fact_events WHERE {WHERE}""", [start, end])[0]
+        behavior = rows(con, f"SELECT event_type, count(*) events, count(DISTINCT user_id) customers FROM fact_events WHERE {WHERE} GROUP BY 1", [start, end])
+        activity = rows(con, f"SELECT CAST(event_time AS DATE) date, event_type, count(*) events FROM fact_events WHERE {WHERE} GROUP BY 1,2 ORDER BY 1", [start, end])
+        heatmap = rows(con, f"""SELECT isodow(event_time)-1 weekday, hour(event_time) hour,
+            count(*) events, count(*) FILTER(WHERE event_type='purchase') purchases
+            FROM fact_events WHERE {WHERE} GROUP BY 1,2 ORDER BY 1,2""", [start, end])
+        brands = rows(con, f"""SELECT coalesce(brand,'Unspecified') brand, sum(price) purchase_value,
+            count(*) purchases FROM fact_events WHERE {WHERE} AND event_type='purchase'
+            GROUP BY 1 ORDER BY 2 DESC LIMIT 10""", [start, end])
+        acquisition = rows(con, f"""WITH firsts AS (
+            SELECT user_id,min(event_time) first_purchase FROM fact_events WHERE event_type='purchase' GROUP BY 1
+        ) SELECT count(DISTINCT e.user_id) FILTER(WHERE f.first_purchase>=?) new_customers,
+            count(DISTINCT e.user_id) FILTER(WHERE f.first_purchase<?) returning_customers
+            FROM fact_events e JOIN firsts f USING(user_id)
+            WHERE e.event_time>=? AND e.event_time<CAST(? AS DATE)+INTERVAL 1 DAY AND e.event_type='purchase'""", [start, start, start, end])[0]
+        comparison_available = bounds['first_date'] is not None and bounds['first_date'] <= previous_start and bounds['last_date'] >= previous_end
+        manifest_path = Path(os.getenv('ATLAS_DATA_DIR','data')) / 'acquisition.json'
+        manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+        return {'current':current, 'previous':previous,
+                'comparison':{'start':str(previous_start),'end':str(previous_end),'available':comparison_available},
+                'behavior':behavior,'activity':activity,'heatmap':heatmap,'brands':brands,'acquisition':acquisition,
+                'coverage':dict(coverage, selected_days=days),
+                'dataset':dict(bounds, sample_rows=manifest.get('sample_rows'), original_rows=manifest.get('original_event_rows'), sampling=manifest.get('sampling'), source=manifest.get('source')),
+                'provenance':provenance(con,start,end)}
