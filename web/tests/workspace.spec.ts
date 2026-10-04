@@ -91,12 +91,21 @@ test("missing warehouse offers setup and an explicit demonstration", async ({
   ).not.toBeVisible();
 });
 
-test('trend supports weekly and cumulative analysis',async({page})=>{
- await page.goto('/');await page.getByRole('button',{name:'Explore demonstration'}).click();
- await page.getByRole('button',{name:'Weekly',exact:true}).click();
- await expect(page.getByRole('img',{name:/Purchase value chart: weekly/})).toBeVisible();
- await page.getByRole('button',{name:'Cumulative',exact:true}).click();
- await expect(page.getByRole('img',{name:/Purchase value chart: cumulative/})).toBeVisible();
- await page.getByRole('button',{name:'Data Explorer',exact:true}).click();
- await expect(page.getByRole('heading',{name:'Go deeper with the real dataset'})).toBeVisible();
+test("trend supports weekly and cumulative analysis", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Explore demonstration" }).click();
+  await page.getByRole("button", { name: "Weekly", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: /Purchase value chart: weekly/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Cumulative", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: /Purchase value chart: cumulative/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Data Explorer", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Go deeper with the real dataset" }),
+  ).toBeVisible();
 });

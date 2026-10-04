@@ -15,6 +15,22 @@ export default function Chart({
   dark?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const instance = useRef<echarts.ECharts | null>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const chart = echarts.init(ref.current);
+    instance.current = chart;
+    const observer = new ResizeObserver(() => {
+      if (!chart.isDisposed()) chart.resize();
+    });
+    observer.observe(ref.current);
+    return () => {
+      observer.disconnect();
+      instance.current = null;
+      chart.getZr().animation.stop();
+      chart.dispose();
+    };
+  }, []);
   const [view, setView] = useState("Daily");
   const [average, setAverage] = useState(true);
   const series = useMemo(() => {
@@ -33,8 +49,8 @@ export default function Chart({
     return { labels: [...groups.keys()], values: [...groups.values()] };
   }, [labels, values, type, view]);
   useEffect(() => {
-    if (!ref.current) return;
-    const chart = echarts.init(ref.current);
+    const chart = instance.current;
+    if (!chart || chart.isDisposed()) return;
     const muted = dark ? "#8799b0" : "#8390a5";
     const showAverage = type === "line" && view === "Daily" && average;
     const rolling = series.values.map((_, i) =>
@@ -44,7 +60,7 @@ export default function Chart({
     );
     chart.setOption({
       color: ["#5ce6bf", "#b2a4ff"],
-      animationDuration: 350,
+      animation: false,
       tooltip: {
         trigger: "axis",
         backgroundColor: dark ? "#1b2536" : "#fff",
@@ -166,13 +182,7 @@ export default function Chart({
             ]
           : []),
       ],
-    });
-    const observer = new ResizeObserver(() => chart.resize());
-    observer.observe(ref.current);
-    return () => {
-      observer.disconnect();
-      chart.dispose();
-    };
+    }, {notMerge: true});
   }, [series, type, label, dark, view, average]);
   return (
     <div className="chart-module">

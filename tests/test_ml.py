@@ -24,6 +24,9 @@ def test_forecast_real_temporal_evaluation(tmp_path):
     assert result['status'] == 'trained'
     assert result['train_end'] < result['test_start']
     assert len(result['predictions']) == 5
+    assert len(result['backtest']) == result['test_days']
+    assert result['backtest'][0]['date'] == result['test_start']
+    assert all(set(r) == {'date','actual','prediction','baseline'} for r in result['backtest'])
     assert result['metrics']['seasonal_naive']['mae'] < 1e-8
     assert result['selected_model'] == 'seasonal_naive'
     assert (tmp_path / 'forecast.joblib').exists()

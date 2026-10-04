@@ -120,7 +120,7 @@ def insights(start, end):
             FROM fact_events WHERE {WHERE}""", [start, end])[0]
         behavior = rows(con, f"SELECT event_type, count(*) events, count(DISTINCT user_id) customers FROM fact_events WHERE {WHERE} GROUP BY 1", [start, end])
         activity = rows(con, f"SELECT CAST(event_time AS DATE) date, event_type, count(*) events FROM fact_events WHERE {WHERE} GROUP BY 1,2 ORDER BY 1", [start, end])
-        heatmap = rows(con, f"""SELECT isodow(event_time)-1 weekday, hour(event_time) hour,
+        heatmap = rows(con, f"""SELECT isodow(event_time)-1 weekday, hour(event_time) AS "hour",
             count(*) events, count(*) FILTER(WHERE event_type='purchase') purchases
             FROM fact_events WHERE {WHERE} GROUP BY 1,2 ORDER BY 1,2""", [start, end])
         brands = rows(con, f"""SELECT coalesce(brand,'Unspecified') brand, sum(price) purchase_value,

@@ -3051,3 +3051,18 @@ textarea:focus-visible {
     font-size: 8px;
   }
 }
+.category-list {
+  max-height: 365px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #345144 transparent;
+}
+.workspace.dark .category-list button:hover strong {
+  color: #7ce3bd;
+}
+.chart-grid > .card {
+  min-width: 0;
+}
+.chart-view-controls > label {
+  white-space: nowrap;
+}

@@ -11,15 +11,17 @@ ATLAS BI turns five months of real e-commerce behavior events into an auditable 
 | Area | Capability |
 | --- | --- |
 | Ingestion | Version-pinned downloads, checksums, deterministic whole-customer sample, chunk validation, exact-field deduplication, quality/lineage manifests, Parquet, DuckDB facts and dimensions |
-| Analytics | Date-bounded overview, sales/category trends, customer RFM/cohort indicators, paginated products, session-based basket affinity, data provenance |
+| Analytics | Daily/weekly/cumulative trends, moving averages, period comparisons, behavior reach, event heatmaps, RFM/cohort retention, brands, paginated products, basket affinity and data coverage |
 | Predictive | Seasonal naive versus recursive HistGradientBoosting forecast; inactivity proxy with temporal/customer-disjoint split; K-Means RFM segments; Isolation Forest session triage |
 | Intelligent queries | Allowlisted natural-language intent router over validated analytical methods; no generated SQL execution |
 | Reporting | Restricted metrics/dimensions with CSV and PDF exports; spreadsheet formula characters escaped |
 | Scenarios | User-entered stock and lead-time assumptions yield a labeled demand-proxy reorder scenario |
-| Application | Next.js, TypeScript, Tailwind, ECharts, TanStack Query/Table, accessible controls, themes and synthetic demonstration mode |
+| Application | Modern Atlas studio, custom brand mark, eight sections, zoomable/exportable ECharts, TypeScript, TanStack Query/Table, themes and explicit demonstration mode |
 | Platform | FastAPI, JWT and Argon2, admin/analyst/viewer roles, migrations, optional Redis/Celery, Docker, tests and GitHub Actions |
 
 See the [architecture decisions](docs/architecture.md), [data pipeline](docs/data-engineering.md), [dataset notes](docs/datasets.md), [API reference](docs/api.md), and [ML methods](docs/ml-methodology.md).
+
+For a guided review, start with the [portfolio walkthrough](docs/portfolio.md). It maps each visualization to the data and explains the model baselines and limitations.
 
 ## Architecture
 

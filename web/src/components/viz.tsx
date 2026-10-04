@@ -14,9 +14,25 @@ export default function Viz({
   height?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const instance = useRef<echarts.ECharts | null>(null);
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    instance.current = chart;
+    const observer = new ResizeObserver(() => {
+      if (!chart.isDisposed()) chart.resize();
+    });
+    observer.observe(ref.current);
+    return () => {
+      observer.disconnect();
+      instance.current = null;
+      chart.getZr().animation.stop();
+      chart.dispose();
+    };
+  }, []);
+  useEffect(() => {
+    const chart = instance.current;
+    if (!chart || chart.isDisposed()) return;
     chart.setOption({
       backgroundColor: "transparent",
       color: ["#56e5bc", "#a79aff", "#65b9ee", "#e9ba85"],
@@ -25,7 +41,7 @@ export default function Viz({
         fontFamily: "system-ui",
         fontSize: 10,
       },
-      animationDuration: 350,
+      animation: false,
       tooltip: {
         trigger: "axis",
         backgroundColor: dark ? "#1b2536" : "#fff",
@@ -46,13 +62,7 @@ export default function Viz({
         },
       },
       ...option,
-    });
-    const observer = new ResizeObserver(() => chart.resize());
-    observer.observe(ref.current);
-    return () => {
-      observer.disconnect();
-      chart.dispose();
-    };
+    }, {notMerge: true});
   }, [option, title, dark]);
   return (
     <div
