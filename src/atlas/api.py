@@ -36,7 +36,10 @@ async def logging_middleware(request: Request, call_next):
 
 @app.exception_handler(FileNotFoundError)
 async def missing_data(request, exc):
-    return JSONResponse(status_code=503, content={'detail':'Warehouse unavailable. Run ingestion first.'})
+    return JSONResponse(status_code=503, content={
+        'detail': 'Your analytics dataset has not been loaded yet. Import event data to open this workspace.',
+        'code': 'warehouse_missing',
+    })
 
 class Dates(BaseModel):
     start: date = date(2019,10,1)

@@ -50,7 +50,9 @@ def test_login_preflight_rejects_unlisted_origin(client):
 def test_auth_and_no_warehouse(client):
     assert client.get('/health').status_code==200
     assert client.get('/api/overview').status_code==401
-    assert client.get('/api/overview',headers=auth(client)).status_code==503
+    missing = client.get('/api/overview',headers=auth(client))
+    assert missing.status_code == 503
+    assert missing.json()['code'] == 'warehouse_missing'
     assert client.post('/api/auth/login',json={'username':'viewer','password':'wrong'}).status_code==401
 
 def test_rbac_and_allowlist(client):
